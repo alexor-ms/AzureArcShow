@@ -46,48 +46,36 @@ Get-AzureStackHCI
 
 # Variable for Deployment
 # Prep for Arc HCI Applicance
-$resource_group="RG-ArcBridge"
+$resource_group="ArcHCIRB-rg"
 $subscription="b3bf1377-93c2-49be-a5cc-d09f00a519a4"
 $Location="westeurope"
 $customloc_name="AsHCI03-HybridCloudLab"
-$csv_path = "C:\ClusterStorage\Volume03-ArcBridge"
-$workingDir = "ResourceBridge"
-$controlPlaneIP = "192.168.52.166"
-$cloudFqdn = "192.168.52.202"
-$vipPoolStart = "192.168.52.231"
-$vipPoolEnd = "192.168.52.235"
-$k8sNodeIpPoolStart = "192.168.52.226"
-$k8sNodeIpPoolEnd = "192.168.52.230"
-$ipaddressprefix = "192.168.52.0/23"
-$gateway = "192.168.53.254"
-$dnsservers = "192.168.53.246"
-$resource_name= ((Get-AzureStackHci).AzureResourceName) + "-arcbridge"
-$hciClusterId= (Get-AzureStackHci).AzureResourceUri
 
-# Use an dedicated storage
-# Depend on environment
+$VswitchName="ComputeSwitch"
+$ControlPlaneIP="192.168.52.166"
+$VMIP_1="192.168.52.167" #(required only for static IP configurations)   
+$VMIP_2="192.168.52.168" #(required only for static IP configurations)   
+$DNSServers="192.168.53.246" #For example: @("192.168.250.250","192.168.250.255") for a list of DNS servers. Or "192.168.250.250" for a single DNS server" (required only for static IP configurations)
+$IPAddressPrefix="192.168.52.0/23" #(required only for static IP configurations)
+$Gateway="192.168.53.254" #(required only for static IP configurations)
+$CloudServiceIP="192.168.52.202" #(required only for static IP configurations)
+$csv_path = "C:\ClusterStorage\Volume03-ArcBridge"
+$vnetName = "hci03rb-vnet"
+$resource_name= ((Get-AzureStackHci).AzureResourceName) + "-arcbridge"
 mkdir $csv_path\ResourceBridge
+# Enable VM Extension to the applicance
+$hciClusterId= (Get-AzureStackHci).AzureResourceUri
 
 # Login on both nodes
 az login --use-device-code
 
 # Prep Azure
 # Resource Group with Contributor role
-
-# Resource Providor at Subscription
-# Check 
-az provider list --query "[].{Provider:namespace, Status:registrationState}" --out table
-
-# Otherwise
-az provider register --namespace Microsoft.Kubernetes --wait
-az provider register --namespace Microsoft.KubernetesConfiguration --wait
-az provider register --namespace Microsoft.ExtendedLocation --wait
-az provider register --namespace Microsoft.ResourceConnector --wait
-az provider register --namespace Microsoft.AzureStackHCI --wait
-az provider register --namespace Microsoft.HybridConnectivity --wait
+# Check for Azure Resource Provider
+# Check for latest updates on Azure CLI & Extensions
 
 # START DEPLOYMENT
-New-ArcHciConfigFiles -subscriptionID $subscription -location $location -resourceGroup $resource_group -resourceName $resource_name -workDirectory $csv_path\ResourceBridge -controlPlaneIP $controlPlaneIP -vipPoolStart $vipPoolStart -vipPoolEnd $vipPoolEnd -k8snodeippoolstart $k8sNodeIpPoolStart -k8snodeippoolend $k8sNodeIpPoolEnd -ipaddressprefix $ipaddressprefix -gateway $gateway -dnsservers $dnsservers -cloudFqdn $cloudFqdn
+New-ArcHciConfigFiles -subscriptionID $subscription -location $location -resourceGroup $resource_group -resourceName $resource_name -workDirectory $csv_path\ResourceBridge -controlPlaneIP $controlPlaneIP -vipPoolStart $controlPlaneIP -vipPoolEnd $controlPlaneIP -k8snodeippoolstart $VMIP_1 -k8snodeippoolend $VMIP_2 -gateway $Gateway -dnsservers $DNSServers -ipaddressprefix $IPAddressPrefix -vswitchName $vswitchName -cloudFqdn $CloudServiceIP -vnetName $vnetName
 
 # Validation
 az arcappliance validate hci --config-file $csv_path\ResourceBridge\hci-appliance.yaml
