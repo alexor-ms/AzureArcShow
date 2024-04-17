@@ -14,7 +14,7 @@ Invoke-WebRequest -Uri $UPDATEPSURL -OutFile $SourceFolder
 
 reagentc /info
 reagentc /disable
-DISKPART /s C:\windows\Temp\Patch_KB5034439.txt
+DISKPART /s $SourceFolder
 reagentc /enable
 reagentc /info
 
